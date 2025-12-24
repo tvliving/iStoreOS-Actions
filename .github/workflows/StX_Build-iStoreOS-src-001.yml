@@ -272,8 +272,8 @@ jobs:
         with:
           # 带日期的Release标签名
           tag_name: iStoreOS-${{ env.VERSION }}-SNAPSHOT-dhcp-${{ env.BUILD_DATE }}
-          # 允许更新已存在的Release（避免重复标签报错）
-          overwrite: true
+          # 兼容v2.2.1版本的"允许更新Release"参数（替换无效的overwrite）
+          allowUpdates: true
           # Release描述内容
           body: |
             🔄 版本： iStoreOS-${{ env.VERSION }}-SNAPSHOT-${{ env.BUILD_DATE }}（源码编译后构建，插件集成适度精简）
