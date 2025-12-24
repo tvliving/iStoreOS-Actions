@@ -191,9 +191,9 @@ on:
 
 # 关键：显式声明GITHUB_TOKEN权限，解决鉴权问题
 permissions:
-  contents: write  # 必须：创建/更新Release需要的核心权限
-  packages: write  # 可选：兼容后续可能的包上传
-  actions: read    # 可选：读取action日志权限
+  contents: write  # 必须：创建/删除标签、Release需要的核心权限
+  packages: write
+  actions: read
 
 env:
   VERSION: 24.10.4
@@ -267,14 +267,22 @@ jobs:
           echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
           echo "📅 构建日期：$BUILD_DATE"
 
+      - name: 🗑️ 删除旧标签/旧Release（避免重复标签报错）
+        run: |
+          TAG_NAME="iStoreOS-${{ env.VERSION }}-SNAPSHOT-dhcp-${{ env.BUILD_DATE }}"
+          # 删除远程标签（如果存在）
+          git ls-remote --tags origin | grep "$TAG_NAME" && git push origin --delete "$TAG_NAME" || echo "ℹ️ 旧标签不存在，无需删除"
+          # 删除旧Release（使用GitHub API）
+          curl -X DELETE \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME" || echo "ℹ️ 旧Release不存在，无需删除"
+
       - name: 🚀 上传到 Release
         uses: softprops/action-gh-release@v2.2.1
         with:
-          # 带日期的Release标签名
+          # 仅保留v2.2.1支持的参数
           tag_name: iStoreOS-${{ env.VERSION }}-SNAPSHOT-dhcp-${{ env.BUILD_DATE }}
-          # 兼容v2.2.1版本的"允许更新Release"参数（替换无效的overwrite）
-          allowUpdates: true
-          # Release描述内容
           body: |
             🔄 版本： iStoreOS-${{ env.VERSION }}-SNAPSHOT-${{ env.BUILD_DATE }}（源码编译后构建，插件集成适度精简）
             
@@ -289,9 +297,7 @@ jobs:
             👤 登录账号：root（无密码）
             
             🌐 默认IP：单网口-动态获取；多网口-192.168.100.1
-          # 上传所有.img.gz固件
           files: |
             ${{ env.PACKAGED_OUTPUTPATH }}/*.img.gz
         env:
-          # 关键：使用GitHub内置GITHUB_TOKEN，无需手动配置
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
