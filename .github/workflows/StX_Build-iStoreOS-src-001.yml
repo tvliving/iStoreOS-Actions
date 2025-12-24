@@ -188,7 +188,7 @@ on:
         required: false
         default: true
         type: boolean
-
+        
 # 关键：显式声明GITHUB_TOKEN权限，解决鉴权问题
 permissions:
   contents: write  # 必须：创建/删除标签、Release需要的核心权限
