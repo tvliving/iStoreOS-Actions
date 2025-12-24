@@ -1,6 +1,8 @@
 name: 💿 StX_Build-iStoreOS-src
 on:
   repository_dispatch:
+  schedule:
+    - cron: '0 0 * * *'  # UTC 0点 = 北京时间8点（UTC+8时区换算）
   workflow_dispatch:
     inputs:
       openwrt_board:
@@ -207,6 +209,13 @@ jobs:
         with:
           fetch-depth: 0  # 必须：获取完整git历史，支持标签操作
 
+      - name: ⚙️ 设置定时构建默认参数
+        run: |
+          # 定时构建时使用的默认值（与手动触发的default保持一致）
+          echo "DEFAULT_OPENWRT_BOARD=a311d-oes_s905d_wxy-oect_jp-tvbox_s922x-oes-plus_fine3399_sv-33a6x_dg3399_dg-tn3568_smart-am40_smart-am60_sw799_king3399_panther-x2_firefly-rk3399_s905l3a_nsy-g16-plus_nsy-g68-plus_bdy-g18-pro" >> $GITHUB_ENV
+          echo "DEFAULT_OPENWRT_KERNEL=6.6.y" >> $GITHUB_ENV
+          echo "DEFAULT_AUTO_KERNEL=true" >> $GITHUB_ENV
+
       - name: ⏬ 下载 rootfs.tar.gz
         run: |
           echo "📦 正在下载预构建 rootfs"
@@ -234,9 +243,10 @@ jobs:
         uses: Kwonelee/amlogic-s9xxx-openwrt@main
         with:
           openwrt_path: ${{ steps.find_rootfs.outputs.file }}
-          openwrt_board: ${{ inputs.openwrt_board }}
-          openwrt_kernel: ${{ inputs.openwrt_kernel }}
-          auto_kernel: ${{ inputs.auto_kernel }}
+          # 适配：手动触发用输入参数，定时触发用默认参数
+          openwrt_board: ${{ github.event.inputs.openwrt_board || env.DEFAULT_OPENWRT_BOARD }}
+          openwrt_kernel: ${{ github.event.inputs.openwrt_kernel || env.DEFAULT_OPENWRT_KERNEL }}
+          auto_kernel: ${{ github.event.inputs.auto_kernel || env.DEFAULT_AUTO_KERNEL }}
           kernel_repo: ophub/kernel
           kernel_usage: stable
           builder_name: kwonelee
@@ -284,9 +294,9 @@ jobs:
           body: |
             🔄 版本： iStoreOS-${{ env.VERSION }}-SNAPSHOT-${{ env.BUILD_DATE }}（源码编译后构建，插件集成适度精简）
             
-            📱 设备型号：${{ inputs.openwrt_board }}
+            📱 设备型号：${{ github.event.inputs.openwrt_board || env.DEFAULT_OPENWRT_BOARD }}
             
-            🧱 内核版本：${{ inputs.openwrt_kernel }}（自动内核：${{ inputs.auto_kernel }}）
+            🧱 内核版本：${{ github.event.inputs.openwrt_kernel || env.DEFAULT_OPENWRT_KERNEL }}（自动内核：${{ github.event.inputs.auto_kernel || env.DEFAULT_AUTO_KERNEL }}）
             
             📂 源码来源： https://github.com/istoreos/istoreos
             
@@ -298,5 +308,4 @@ jobs:
           files: |
             ${{ env.PACKAGED_OUTPUTPATH }}/*.img.gz
         env:
-          # 修复3：使用GitHub内置的GITHUB_TOKEN（无需手动配置）
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
