@@ -189,6 +189,12 @@ on:
         default: true
         type: boolean
 
+# 关键：显式声明GITHUB_TOKEN权限，解决鉴权问题
+permissions:
+  contents: write  # 必须：创建/更新Release需要的核心权限
+  packages: write  # 可选：兼容后续可能的包上传
+  actions: read    # 可选：读取action日志权限
+
 env:
   VERSION: 24.10.4
 
@@ -205,6 +211,11 @@ jobs:
           mkdir -p bin/targets/armsr/armv8
           curl -L -o bin/targets/armsr/armv8/openwrt-armvirt-64-default-rootfs.tar.gz \
             https://github.com/Kwonelee/Rootfs-Actions/releases/download/generic-rootfs/istoreos-armsr-armv8-generic-rootfs.tar.gz
+          # 验证下载是否成功
+          if [ ! -f "bin/targets/armsr/armv8/openwrt-armvirt-64-default-rootfs.tar.gz" ]; then
+            echo "❌ rootfs.tar.gz 下载失败"
+            exit 1
+          fi
 
       - name: 🔍 查找rootfs.tar.gz所在路径
         id: find_rootfs
@@ -231,46 +242,56 @@ jobs:
       - name: 📜 调整.img.gz 文件名
         id: rename
         run: |
-          # 修复sed变量拼接语法，正确替换文件名
+          # 检查打包输出目录是否存在
+          if [ ! -d "${{ env.PACKAGED_OUTPUTPATH }}" ]; then
+            echo "❌ 打包输出目录不存在：${{ env.PACKAGED_OUTPUTPATH }}"
+            exit 1
+          fi
+          # 批量重命名固件文件
           for FILE in ${{ env.PACKAGED_OUTPUTPATH }}/*.img.gz; do
             if [ -f "$FILE" ]; then
-              echo "Processing file: $FILE"
+              echo "🔧 处理文件：$FILE"
               FILENAME=$(basename "$FILE")
-              # 正确拼接VERSION变量，替换openwrt为istoreos_版本号
               NEW_FILENAME=$(echo "$FILENAME" | sed "s/openwrt/istoreos_${{ env.VERSION }}/g")
               mv "$FILE" "${{ env.PACKAGED_OUTPUTPATH }}/$NEW_FILENAME"
-              echo "Renamed $FILENAME to $NEW_FILENAME"
+              echo "✅ 重命名完成：$FILENAME → $NEW_FILENAME"
             else
-              echo "No .img.gz files found in ${{ env.PACKAGED_OUTPUTPATH }}"
+              echo "ℹ️ 未找到.img.gz格式固件文件"
             fi
           done
 
       - name: 📅 设置构建日期变量
         run: |
-          # 生成格式为 YYYY.MM.DD 的日期（如 2025.12.24）
-          echo "BUILD_DATE=$(date +'%Y.%m.%d')" >> $GITHUB_ENV
+          # 生成YYYY.MM.DD格式日期
+          BUILD_DATE=$(date +'%Y.%m.%d')
+          echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
+          echo "📅 构建日期：$BUILD_DATE"
 
       - name: 🚀 上传到 Release
-         uses: softprops/action-gh-release@v2.2.1
-         with:
+        uses: softprops/action-gh-release@v2.2.1
+        with:
+          # 带日期的Release标签名
           tag_name: iStoreOS-${{ env.VERSION }}-SNAPSHOT-dhcp-${{ env.BUILD_DATE }}
-           body: |
+          # 允许更新已存在的Release（避免重复标签报错）
+          overwrite: true
+          # Release描述内容
+          body: |
             🔄 版本： iStoreOS-${{ env.VERSION }}-SNAPSHOT-${{ env.BUILD_DATE }}（源码编译后构建，插件集成适度精简）
-      
-             📂 来源： https://github.com/istoreos/istoreos
-      
-             🧠 内核： Please Login to iStoreOS → System → Amlogic Service → Replace the Kernel
-      
-             🧩 集成： 包含了基础系统组件、驱动、网络工具、容器支持、LuCI界面及插件等
-      
-             👤 用户名： root
-      
-             🔒 密码： 无
-      
-             🌐 IP： 单网口-动态获取（从上级路由找寻）；多网口-IP：192.168.100.1
-           files: |
-      ${{ env.PACKAGED_OUTPUTPATH }}/*.img.gz
-  env:
-    # 关键修正：将 GH_TOKEN 改为 GitHub 内置的 GITHUB_TOKEN
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+            
+            📱 设备型号：${{ inputs.openwrt_board }}
+            
+            🧱 内核版本：${{ inputs.openwrt_kernel }}（自动内核：${{ inputs.auto_kernel }}）
+            
+            📂 源码来源： https://github.com/istoreos/istoreos
+            
+            🧠 内核替换：登录iStoreOS → 系统 → Amlogic Service → Replace the Kernel
+            
+            👤 登录账号：root（无密码）
+            
+            🌐 默认IP：单网口-动态获取；多网口-192.168.100.1
+          # 上传所有.img.gz固件
+          files: |
+            ${{ env.PACKAGED_OUTPUTPATH }}/*.img.gz
+        env:
+          # 关键：使用GitHub内置GITHUB_TOKEN，无需手动配置
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
