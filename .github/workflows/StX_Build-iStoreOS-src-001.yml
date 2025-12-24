@@ -204,6 +204,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # 必须：获取完整git历史，支持标签操作
 
       - name: ⏬ 下载 rootfs.tar.gz
         run: |
@@ -211,6 +213,11 @@ jobs:
           mkdir -p bin/targets/armsr/armv8
           curl -L -o bin/targets/armsr/armv8/openwrt-armvirt-64-default-rootfs.tar.gz \
             https://github.com/Kwonelee/Rootfs-Actions/releases/download/generic-rootfs/istoreos-armsr-armv8-generic-rootfs.tar.gz
+          # 验证下载是否成功
+          if [ ! -f "bin/targets/armsr/armv8/openwrt-armvirt-64-default-rootfs.tar.gz" ]; then
+            echo "❌ rootfs.tar.gz 下载失败"
+            exit 1
+          fi
 
       - name: 🔍 查找rootfs.tar.gz所在路径
         id: find_rootfs
@@ -256,6 +263,20 @@ jobs:
           echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
           echo "📅 构建日期：$BUILD_DATE"
 
+      - name: 🗑️ 删除旧标签/Release（避免重复标签报错）
+        run: |
+          TAG_NAME="iStoreOS-${{ env.VERSION }}-SNAPSHOT-dhcp-${{ env.BUILD_DATE }}"
+          # 配置git用户信息（避免push报错）
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          # 删除远程标签（如果存在）
+          git ls-remote --tags origin | grep "$TAG_NAME" && git push origin --delete "$TAG_NAME" || echo "ℹ️ 旧标签不存在，无需删除"
+          # 删除旧Release（使用GitHub API）
+          curl -X DELETE \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME" || echo "ℹ️ 旧Release不存在，无需删除"
+
       - name: 🚀 上传到 Release
         uses: softprops/action-gh-release@v2.2.1
         with:
@@ -277,4 +298,5 @@ jobs:
           files: |
             ${{ env.PACKAGED_OUTPUTPATH }}/*.img.gz
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          # 修复3：使用GitHub内置的GITHUB_TOKEN（无需手动配置）
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
