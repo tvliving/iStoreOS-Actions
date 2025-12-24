@@ -251,25 +251,26 @@ jobs:
           echo "BUILD_DATE=$(date +'%Y.%m.%d')" >> $GITHUB_ENV
 
       - name: 🚀 上传到 Release
-        uses: softprops/action-gh-release@v2.2.1
-        with:
-          # 标签名拼接日期变量
+         uses: softprops/action-gh-release@v2.2.1
+         with:
           tag_name: iStoreOS-${{ env.VERSION }}-SNAPSHOT-dhcp-${{ env.BUILD_DATE }}
-          body: |
+           body: |
             🔄 版本： iStoreOS-${{ env.VERSION }}-SNAPSHOT-${{ env.BUILD_DATE }}（源码编译后构建，插件集成适度精简）
-            
-            📂 来源： https://github.com/istoreos/istoreos
-            
-            🧠 内核： Please Login to iStoreOS → System → Amlogic Service → Replace the Kernel
-            
-            🧩 集成： 包含了基础系统组件、驱动、网络工具、容器支持、LuCI界面及插件等
-            
-            👤 用户名： root
-            
-            🔒 密码： 无
-            
-            🌐 IP： 单网口-动态获取（从上级路由找寻）；多网口-IP：192.168.100.1
-          files: |
-            ${{ env.PACKAGED_OUTPUTPATH }}/*.img.gz
-        env:
+      
+             📂 来源： https://github.com/istoreos/istoreos
+      
+             🧠 内核： Please Login to iStoreOS → System → Amlogic Service → Replace the Kernel
+      
+             🧩 集成： 包含了基础系统组件、驱动、网络工具、容器支持、LuCI界面及插件等
+      
+             👤 用户名： root
+      
+             🔒 密码： 无
+      
+             🌐 IP： 单网口-动态获取（从上级路由找寻）；多网口-IP：192.168.100.1
+           files: |
+      ${{ env.PACKAGED_OUTPUTPATH }}/*.img.gz
+  env:
+    # 关键修正：将 GH_TOKEN 改为 GitHub 内置的 GITHUB_TOKEN
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}        env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
