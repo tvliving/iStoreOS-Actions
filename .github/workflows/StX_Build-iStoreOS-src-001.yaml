@@ -221,8 +221,7 @@ on:
 
 permissions:
   contents: write
-  packages: write
-  actions: read
+  pull-requests: read
 
 env:
   VERSION: 24.10.5
@@ -303,4 +302,4 @@ jobs:
             🌐 IP：单网口DHCP自动获取｜多网口：192.168.100.1
           files: ${{ env.PACKAGED_OUTPUTPATH }}/*.img.gz
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
