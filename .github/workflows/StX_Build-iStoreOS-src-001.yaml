@@ -1,25 +1,34 @@
 name: 💿 StX_Build-iStoreOS-src
+
 on:
   repository_dispatch:
   schedule:
-    - cron: '0 0 * * *'  # UTC 0点 = 北京时间8点（UTC+8时区换算）
+    - cron: '0 0 * * *'   # 每日 UTC 0点 → 北京时间 08:00 自动构建
   workflow_dispatch:
     inputs:
       openwrt_board:
-        description: "请选择设备型号"
+        description: "1、请选择设备型号"
         required: true
-        default: "a311d-oes_s905d_wxy-oect_jp-tvbox_s922x-oes-plus_fine3399_sv-33a6x_dg3399_dg-tn3568_smart-am40_smart-am60_sw799_king3399_panther-x2_firefly-rk3399_s905l3a_nsy-g16-plus_nsy-g68-plus_bdy-g18-pro"
+        default: "s905d_s905x3_s912_s922x-ct2000"
         type: choice
         options:
-          - a311d-oes_s905d_wxy-oect_jp-tvbox_s922x-oes-plus_fine3399_sv-33a6x_dg3399_dg-tn3568_smart-am40_smart-am60_sw799_king3399_panther-x2_firefly-rk3399_s905l3a_nsy-g16-plus_nsy-g68-plus_bdy-g18-pro
+          - a311d-oes_s922x-oes-plus_wxy-oect
+          - nsy-g16-plus_nsy-g68-plus_bdy-g18-pro
+          - s905d_s905x3_s912_s922x-ct2000
           - a311d
           - a311d-oes
           - alark35-3500
           - anas3035
           - aio-3399b
+          - aio-3399c
+          - aio-3399c-ai
+          - bdkj-bd-one
           - bdy-g18-pro
           - beikeyun
+          - boca-tcn100
+          - cd1000
           - chainedbox
+          - cm3588-nas
           - crrc
           - dc-a588
           - dg3399
@@ -30,38 +39,54 @@ on:
           - eaidk-610
           - emb3531
           - fine3399
+          - firefly-jd4
           - firefly-rk3399
           - fmx1-pro
-          - jp-tvbox
+          - fmx1-pro-b
+          - gea-6319
+          - gzpeite-p01
           - h28k
+          - h618-devboard
           - h66k
           - h68k
           - h69k
           - h88k
           - h88k-v3
           - h96-max-m2
+          - hk1-rbox-k8s
           - hs530r
+          - ht2
           - hugsun-x99
           - ipc-r
+          - jp-tvbox
           - king3399
           - kylin3399
           - lckfb-tspi
           - leez
           - lx-r3s
+          - lyt-t68m
+          - lz-d3568
+          - lz-d3588
+          - lz-k3568
           - mrkaio-m68s
+          - nanopc-t4
           - nanopc-t6
+          - nanopi-m5
           - nanopi-r5c
           - nanopi-r5s
           - nsy-g16-plus
           - nsy-g68-plus
+          - orangepi-3b
           - orangepi-5-plus
           - orangepi-5b
+          - orangepi-zero3
           - panther-x2
           - photonicat
           - r66s
           - r68s
           - renegade-rk3328
           - rk3318-box
+          - rock-5-itx
           - rock5b
           - rock5c
           - ruisen-box
@@ -121,6 +146,7 @@ on:
           - s905x3-ip1001m
           - s905x3-q1
           - s905x3-q2
+          - s905x3-tox1
           - s905x3-tx3
           - s905x3-tx3-bz
           - s905x3-ugoosx3
@@ -155,9 +181,12 @@ on:
           - smart-am60
           - station-m1
           - station-m2
+          - station-p2
           - sv-33a6x
+          - sv-33a6x-vpu
           - swan1-w28
           - sw799
+          - taram
           - tanix-tx6
           - tb-ls3399
           - tn3399
@@ -168,53 +197,55 @@ on:
           - wocyber-a3
           - wxy-oect
           - wxy-oect-mod
+          - x88pro20
+          - x98h
           - xiaobao
           - yskj
           - zcube1-max
           - zk-r39a
           - zysj
       openwrt_kernel:
-        description: "请选择内核版本"
+        description: "2、请选择内核版本"
         required: true
         default: "6.6.y"
         type: choice
         options:
-          - 5.15.y
-          - 6.1.y
           - 6.6.y
           - 6.12.y
-          - 6.6.115
-          - 6.12.47
+          - 6.18.y
       auto_kernel:
         description: "自动使用最新内核-未匹配则自动"
         required: false
         default: true
         type: boolean
-        
-# 关键：显式声明GITHUB_TOKEN权限，解决鉴权问题
+
 permissions:
-  contents: write  # 必须：创建/删除标签、Release需要的核心权限
+  contents: write
   packages: write
   actions: read
 
 env:
-  VERSION: 24.10.4
+  VERSION: 24.10.5
 
 jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # 必须：获取完整git历史，支持标签操作
+          fetch-depth: 0
 
-      - name: ⚙️ 设置定时构建默认参数
+      - name: ⚙️ 定时构建默认参数
         run: |
-          # 定时构建时使用的默认值（与手动触发的default保持一致）
-          echo "DEFAULT_OPENWRT_BOARD=a311d-oes_s905d_wxy-oect_jp-tvbox_s922x-oes-plus_fine3399_sv-33a6x_dg3399_dg-tn3568_smart-am40_smart-am60_sw799_king3399_panther-x2_firefly-rk3399_s905l3a_nsy-g16-plus_nsy-g68-plus_bdy-g18-pro" >> $GITHUB_ENV
-          echo "DEFAULT_OPENWRT_KERNEL=6.6.y" >> $GITHUB_ENV
-          echo "DEFAULT_AUTO_KERNEL=true" >> $GITHUB_ENV
+          echo "DEFAULT_BOARD=s905d_s905x3_s912_s922x-ct2000" >> $GITHUB_ENV
+          echo "DEFAULT_KERNEL=6.6.y" >> $GITHUB_ENV
+          echo "DEFAULT_AUTO=true" >> $GITHUB_ENV
+
+      - name: 📅 获取当前日期
+        run: |
+          echo "BUILD_DATE=$(date +'%Y.%m.%d')" >> $GITHUB_ENV
+          echo "FULL_VERSION=${{ env.VERSION }}_$(date +'%Y.%m.%d')" >> $GITHUB_ENV
 
       - name: ⏬ 下载 rootfs.tar.gz
         run: |
@@ -222,90 +253,54 @@ jobs:
           mkdir -p bin/targets/armsr/armv8
           curl -L -o bin/targets/armsr/armv8/openwrt-armvirt-64-default-rootfs.tar.gz \
             https://github.com/Kwonelee/Rootfs-Actions/releases/download/generic-rootfs/istoreos-armsr-armv8-generic-rootfs.tar.gz
-          # 验证下载是否成功
-          if [ ! -f "bin/targets/armsr/armv8/openwrt-armvirt-64-default-rootfs.tar.gz" ]; then
-            echo "❌ rootfs.tar.gz 下载失败"
-            exit 1
-          fi
 
-      - name: 🔍 查找rootfs.tar.gz所在路径
+      - name: 🔍 查找rootfs.tar.gz
         id: find_rootfs
         run: |
           ROOTFS_FILE=$(find bin/targets/armsr/armv8/ -type f -name "*rootfs.tar.gz" | head -n1)
           echo "✅ Found: $ROOTFS_FILE"
-          if [ ! -f "$ROOTFS_FILE" ]; then
-            echo "❌ 找不到 rootfs.tar.gz 文件"
-            exit 1
-          fi
+          if [ ! -f "$ROOTFS_FILE" ]; then exit 1; fi
           echo "file=$ROOTFS_FILE" >> $GITHUB_OUTPUT
 
       - name: 🧱 打包iStoreOS固件
         uses: Kwonelee/amlogic-s9xxx-openwrt@main
         with:
           openwrt_path: ${{ steps.find_rootfs.outputs.file }}
-          # 适配：手动触发用输入参数，定时触发用默认参数
-          openwrt_board: ${{ github.event.inputs.openwrt_board || env.DEFAULT_OPENWRT_BOARD }}
-          openwrt_kernel: ${{ github.event.inputs.openwrt_kernel || env.DEFAULT_OPENWRT_KERNEL }}
-          auto_kernel: ${{ github.event.inputs.auto_kernel || env.DEFAULT_AUTO_KERNEL }}
+          openwrt_board: ${{ inputs.openwrt_board || env.DEFAULT_BOARD }}
+          openwrt_kernel: ${{ inputs.openwrt_kernel || env.DEFAULT_KERNEL }}
+          auto_kernel: ${{ inputs.auto_kernel || env.DEFAULT_AUTO }}
           kernel_repo: ophub/kernel
           kernel_usage: stable
           builder_name: kwonelee
 
-      - name: 📜 调整.img.gz 文件名
-        id: rename
+      - name: 📜 重命名固件（带日期版本号）
         run: |
           for FILE in ${{ env.PACKAGED_OUTPUTPATH }}/*.img.gz; do
-            echo "Processing file: $FILE"
-            FILENAME=$(basename "$FILE")
-            NEW_FILENAME=$(echo "$FILENAME" | sed 's/openwrt/istoreos_${{ env.VERSION }}/g')
-            if [ "$FILENAME" != "$NEW_FILENAME" ]; then
-              mv "$FILE" "${{ env.PACKAGED_OUTPUTPATH }}/$NEW_FILENAME"
-              echo "Renamed $FILENAME to $NEW_FILENAME"
-            else
-              echo "No need to rename $FILENAME"
-            fi
+            NEW_NAME=$(basename "$FILE" | sed "s/openwrt/istoreos_${{ env.FULL_VERSION }}/g")
+            mv -f "$FILE" "${{ env.PACKAGED_OUTPUTPATH }}/$NEW_NAME"
+            echo "✅ 重命名为：$NEW_NAME"
           done
 
-      - name: 📅 设置构建日期变量
+      - name: 🗑️ 清理旧版本标签
         run: |
-          # 生成YYYY.MM.DD格式日期
-          BUILD_DATE=$(date +'%Y.%m.%d')
-          echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
-          echo "📅 构建日期：$BUILD_DATE"
-
-      - name: 🗑️ 删除旧标签/Release（避免重复标签报错）
-        run: |
-          TAG_NAME="iStoreOS-${{ env.VERSION }}-SNAPSHOT-dhcp-${{ env.BUILD_DATE }}"
-          # 配置git用户信息（避免push报错）
-          git config --global user.name "GitHub Actions"
+          TAG="iStoreOS-${{ env.FULL_VERSION }}-SNAPSHOT-dhcp"
+          git config --global user.name "Actions"
           git config --global user.email "actions@github.com"
-          # 删除远程标签（如果存在）
-          git ls-remote --tags origin | grep "$TAG_NAME" && git push origin --delete "$TAG_NAME" || echo "ℹ️ 旧标签不存在，无需删除"
-          # 删除旧Release（使用GitHub API）
-          curl -X DELETE \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME" || echo "ℹ️ 旧Release不存在，无需删除"
+          git push origin --delete "$TAG" || true
+          curl -X DELETE -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG" || true
 
-      - name: 🚀 上传到 Release
-        uses: softprops/action-gh-release@v2.2.1
+      - name: 🚀 上传 Release（带日期版本）
+        uses: softprops/softprops/action-gh-release@v2.2.1
         with:
-          tag_name: iStoreOS-${{ env.VERSION }}-SNAPSHOT-dhcp-${{ env.BUILD_DATE }}
+          tag_name: iStoreOS-${{ env.FULL_VERSION }}-SNAPSHOT-dhcp
           body: |
-            🔄 版本： iStoreOS-${{ env.VERSION }}-SNAPSHOT-${{ env.BUILD_DATE }}（源码编译后构建，插件集成适度精简）
-            
-            📱 设备型号：${{ github.event.inputs.openwrt_board || env.DEFAULT_OPENWRT_BOARD }}
-            
-            🧱 内核版本：${{ github.event.inputs.openwrt_kernel || env.DEFAULT_OPENWRT_KERNEL }}（自动内核：${{ github.event.inputs.auto_kernel || env.DEFAULT_AUTO_KERNEL }}）
-            
-            📂 源码来源： https://github.com/istoreos/istoreos
-            
-            🧠 内核替换：登录iStoreOS → 系统 → Amlogic Service → Replace the Kernel
-            
-            👤 登录账号：root（无密码）
-            
-            🌐 IP： 单网口-动态获取（从上级路由找寻）；多网口-IP：192.168.100.1
-          files: |
-            ${{ env.PACKAGED_OUTPUTPATH }}/*.img.gz
+            🔄 版本：iStoreOS ${{ env.FULL_VERSION }}（每日自动构建）
+            📅 构建日期：${{ env.BUILD_DATE }}
+            📦 设备：${{ inputs.openwrt_board || env.DEFAULT_BOARD }}
+            🧩 内核：${{ inputs.openwrt_kernel || env.DEFAULT_KERNEL }}
+            🔐 账号：root（无密码）
+            🌐 IP：单网口DHCP自动获取｜多网口：192.168.100.1
+          files: ${{ env.PACKAGED_OUTPUTPATH }}/*.img.gz
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
