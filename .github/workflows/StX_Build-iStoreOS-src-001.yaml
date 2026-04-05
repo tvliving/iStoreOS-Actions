@@ -290,8 +290,8 @@ jobs:
           curl -X DELETE -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG" || true
 
-      - name: 🚀 上传 Release（带日期版本）
-        uses: softprops/softprops/action-gh-release@v2.2.1
+      - name: 🚀 上传到 Release
+        uses: softprops/action-gh-release@v2.2.1
         with:
           tag_name: iStoreOS-${{ env.FULL_VERSION }}-SNAPSHOT-dhcp
           body: |
