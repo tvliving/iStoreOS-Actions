@@ -5,9 +5,10 @@ on:
       build_version:
         description: "1、请选择构建版本"
         required: true
-        default: '20260320'
+        default: '20260410'
         type: choice
         options:
+          - '20260410'
           - '20260320'
           - '20251231'
           - '20251226'

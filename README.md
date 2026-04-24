@@ -1,6 +1,6 @@
 <div align="center">
   <img src="./files/screenshot/istoreos.png" style="max-width: 100%; height: auto;" />
-  <h1>基于imagebuilder与ophub打包工具的iStoreOS固件</h1>
+  <h1>✨ 基于imagebuilder与ophub工具构建的iStoreOS固件 ✨</h1>
 
   <img src="https://img.shields.io/github/downloads/Kwonelee/iStoreOS-Actions/total.svg?style=for-the-badge&color=32C955"/>
   <img src="https://img.shields.io/github/stars/Kwonelee/iStoreOS-Actions.svg?style=for-the-badge&color=orange"/>
@@ -19,7 +19,7 @@
 ---
 
 ## 🤔 项目介绍 [![](https://img.shields.io/badge/-项目介绍-FFFFFF.svg)](#-项目介绍-)
-**iStoreOS** 目标是提供一个人人会用的路由兼轻 **NAS 系统** ，不管是作为路由还是 NAS，你都有相似的操作体验。
+**iStoreOS** 目标是提供一个人人会用的路由兼轻 **NAS 系统** ，不管是作为路由还是 NAS，你都有相似的操作体验
 
 > [!TIP]
 > 😂此固件为 **非官方构建，不保证完全无BUG** ，请知悉😂
@@ -27,6 +27,8 @@
 > 😂若当前项目严重影响您的使用，欢迎您探索右侧项目😂👉👉👉[iStoreOS-Native](https://github.com/Kwonelee/iStoreOS-Native)
 > 
 > 使用此仓库必须设置机密token，Actions云构建固件时需要用到，通常在仓库设置里面。机密键名为 **`GH_TOKEN`**（严禁在仓库可视代码中填写，否则后果自负）
+
+---
 
 ## 😅 第三方插件 [![](https://img.shields.io/badge/-第三方插件-FFFFFF.svg)](#-第三方插件-)
 <div align="center">
@@ -71,8 +73,12 @@
 | h6       | Vplus, Tanix-TX6, TQC-A01 |
 | h618     | OrangePi-Zero3, H618-DevBoard, X98H |
 
+---
+
 ## 🤗 项目截图 [![](https://img.shields.io/badge/-项目截图-FFFFFF.svg)](#-项目截图-)
 ![screenshots](./files/screenshot/screenshot1.png)
+
+---
 
 ## 🌟 Star戳一戳，好运加满！😆
 > **"点过 `Star` 的朋友，颜值与智慧双双在线！✨"**
