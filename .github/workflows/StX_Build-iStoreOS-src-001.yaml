@@ -224,7 +224,7 @@ permissions:
   pull-requests: read
 
 env:
-  VERSION: 24.10.5
+  VERSION: 24.10.6
 
 jobs:
   build:
