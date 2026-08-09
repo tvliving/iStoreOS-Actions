@@ -5,13 +5,13 @@ on:
       build_version:
         description: "1、请选择构建版本"
         required: true
-        default: '20260417'
+        default: '20260731'
         type: choice
         options:
+          - '20260731'
+          - '20260703'
+          - '20260605'
           - '20260417'
-          - '20260410'
-          - '20260320'
-          - '20251231'
       network_settings:
         description: "2、请选择初始网络配置"
         required: true
@@ -30,7 +30,7 @@ on:
         default: '192.168.5.1'
 
 env:
-  VERSION: 24.10.6
+  VERSION: 24.10.8
 
 jobs:
   build:
@@ -77,17 +77,19 @@ jobs:
 
     - name: ⏬ 复制并设置必备文件
       run: |
-        cp arm64/{build24.sh,Makefile} imagebuilder/
-        #cp arm64/repositories.conf imagebuilder/
-        cp shell/{prepare-packages.sh,custom-packages.sh} imagebuilder/
+        cp arm64/build24.sh imagebuilder/
+        #cp arm64/{Makefile,repositories.conf} imagebuilder/
+        cp shell/*-packages.sh imagebuilder/
         find files/packages/ -name "*.ipk" -exec cp {} imagebuilder/packages/ \;
         
         mkdir -p imagebuilder/files/etc/{uci-defaults,banner1}
-        #添加开机启动脚本
+        # 添加开机启动脚本
         cp files/etc/uci-defaults/99-custom.sh imagebuilder/files/etc/uci-defaults/
-        #替换O大打包脚本的默认banner
+        
+        # 替换O大打包脚本的默认banner
         cp files/etc/banner imagebuilder/files/etc/banner1/
-        #临时解决通过晶晨宝盒写入emmc后根分区变为只读状态问题
+        
+        # 临时处理Amlogic通过宝盒插件写入emmc后，根分区变为只读状态的问题
         cp files/etc/rc.local imagebuilder/files/etc/
         
         cd imagebuilder
@@ -98,18 +100,18 @@ jobs:
         echo "打印action目录结构"
         tree -L 1
 
-    - name: 🧱 构建iStoreOS-rootfs
+    - name: 🧱 构建 iStoreOS-rootfs
       working-directory: ./imagebuilder
       run: |
         echo "打印imagebuilder目录结构"
         tree -L 1
         echo "打印repositories"
         cat repositories.conf
-        echo "打印Makefile"
-        cat Makefile |grep here
+        #echo "打印Makefile"
+        #cat Makefile |grep here
         bash ./build24.sh
 
-    - name: 📦 打印产出rootfs
+    - name: 📦 打印产出 Rootfs
       run: |
         echo "打印bin目录"
         ls -lah imagebuilder/bin/targets/armsr/armv8/

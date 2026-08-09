@@ -121,9 +121,10 @@ uci commit
 cp /etc/banner1/banner /etc/
 rm -r /etc/banner1
 
-# 设置编译作者信息
+# 设置版本信息
 FILE_PATH="/etc/openwrt_release"
-NEW_DESCRIPTION="iStoreOS 版本号"
-sed -i "s/DISTRIB_DESCRIPTION='[^']*'/DISTRIB_DESCRIPTION='$NEW_DESCRIPTION'/" "$FILE_PATH"
+NEW_DESCRIPTION="iStoreOS 版本号 @kwonelee"
+sed -i "s/^DISTRIB_REVISION=.*/DISTRIB_REVISION=''/" "$FILE_PATH"
+sed -i "s#^DISTRIB_DESCRIPTION=.*#DISTRIB_DESCRIPTION='$NEW_DESCRIPTION'#" "$FILE_PATH"
 
 exit 0
