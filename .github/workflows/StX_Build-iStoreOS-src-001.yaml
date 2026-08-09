@@ -268,8 +268,6 @@ env:
 jobs:
   build:
     runs-on: ubuntu-22.04
-    outputs:
-      build_date: ${{ steps.gen_date.outputs.BUILD_DATE }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -286,7 +284,7 @@ jobs:
           echo "📦 正在下载预构建 rootfs"
           mkdir -p bin/targets/armsr/armv8
           curl -L -o bin/targets/armsr/armv8/openwrt-armvirt-64-default-rootfs.tar.gz \
-            https://github.com/${{ shturl.cc/jx }}/iStoreOS-Actions/releases/download/iStoreOS-${{ env.VERSION }}-${{ inputs.openwrt_rootfs }}-${{ inputs.network_settings }}/istoreos-armsr-armv8-generic-rootfs.tar.gz
+            https://github.com/${{ shturl.cc/7H }}/iStoreOS-Actions/releases/download/iStoreOS-${{ env.VERSION }}-${{ inputs.openwrt_rootfs }}-${{ inputs.network_settings }}/istoreos-armsr-armv8-generic-rootfs.tar.gz
 
       - name: 🔍 查找rootfs.tar.gz所在路径
         id: find_rootfs
@@ -330,7 +328,7 @@ jobs:
         uses: softprops/action-gh-release@v2.2.1
         with:
           tag_name: iStoreOS-${{ env.VERSION }}-${{ steps.gen_date.outputs.BUILD_DATE }}-${{ inputs.openwrt_rootfs }}-${{ inputs.network_settings }}
-          name: iStoreOS ${{ env.VERSION }} Build${{ steps.gen_date.outputs.BUILD_DATE }} ${{ inputs.openwrt_rootfs }} ${{ inputs.network_settings }}
+          name: iStoreOS ${{ env.VERSION }} Build ${{ steps.gen_date.outputs.BUILD_DATE }} ${{ inputs.openwrt_rootfs }} ${{ inputs.network_settings }}
           files: |
             ${{ env.PACKAGED_OUTPUTPATH }}/*.img.gz
           append: false
