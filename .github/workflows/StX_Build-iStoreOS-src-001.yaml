@@ -1,8 +1,7 @@
 name: 💿 St2_Build-iStoreOS-using-ib
-
 on:
+  # GitHub cron是UTC时间；0 19 * * * = UTC19点 = 北京时间03:00
   schedule:
-    # UTC 19点 = 北京时间 凌晨03:00
     - cron: '0 19 * * *'
   repository_dispatch:
   workflow_dispatch:
@@ -267,24 +266,24 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    # 修复cp --update参数报错：替换为ubuntu‑24.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: 📅 生成 YYYYMMDD 格式构建日期
+      - name: 📅 生成 YYYYMMDD 构建日期
         id: gen_date
         run: |
           BUILD_DATE=$(date +%Y%m%d)
           echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_OUTPUT
-          echo "BUILD_DATE: $BUILD_DATE"
 
       - name: ⏬ 下载 rootfs.tar.gz
         run: |
           echo "📦 正在下载预构建 rootfs"
           mkdir -p bin/targets/armsr/armv8
           curl -L -o bin/targets/armsr/armv8/openwrt-armvirt-64-default-rootfs.tar.gz \
-            https://github.com/${{ shturl.cc/7H }}/iStoreOS-Actions/releases/download/iStoreOS-${{ env.VERSION }}-${{ inputs.openwrt_rootfs }}-${{ inputs.network_settings }}/istoreos-armsr-armv8-generic-rootfs.tar.gz
+            https://github.com/${{ shturl.cc/DF }}/iStoreOS-Actions/releases/download/iStoreOS-${{ env.VERSION }}-${{ inputs.openwrt_rootfs }}-${{ inputs.network_settings }}/istoreos-armsr-armv8-generic-rootfs.tar.gz
 
       - name: 🔍 查找rootfs.tar.gz所在路径
         id: find_rootfs
@@ -308,7 +307,7 @@ jobs:
           kernel_usage: stable
           builder_name: kwonelee
 
-      - name: 📜 调整.img.gz 文件名，附加构建日期
+      - name: 📜 修改固件文件名，追加版本+日期
         id: rename
         run: |
           BUILD_DATE=${{ steps.gen_date.outputs.BUILD_DATE }}
@@ -318,17 +317,15 @@ jobs:
             NEW_FILENAME=$(echo "$FILENAME" | sed "s/openwrt/istoreos_${{ env.VERSION }}_${BUILD_DATE}/g")
             if [ "$FILENAME" != "$NEW_FILENAME" ]; then
               mv "$FILE" "${{ env.PACKAGED_OUTPUTPATH }}/$NEW_FILENAME"
-              echo "Renamed $FILENAME to $NEW_FILENAME"
-            else
-              echo "No need to rename $FILENAME"
+              echo "Renamed $FILENAME --> $NEW_FILENAME"
             fi
           done
 
-      - name: 🚀 上传到 Release，每日独立tag，不覆盖旧版本
+      - name: 🚀 上传Release，每日独立tag，保留历史版本
         uses: softprops/action-gh-release@v2.2.1
         with:
           tag_name: iStoreOS-${{ env.VERSION }}-${{ steps.gen_date.outputs.BUILD_DATE }}-${{ inputs.openwrt_rootfs }}-${{ inputs.network_settings }}
-          name: iStoreOS ${{ env.VERSION }} Build ${{ steps.gen_date.outputs.BUILD_DATE }} ${{ inputs.openwrt_rootfs }} ${{ inputs.network_settings }}
+          name: "iStoreOS ${{ env.VERSION }} Build‑${{ steps.gen_date.outputs.BUILD_DATE }} ${{ inputs.openwrt_board }}"
           files: |
             ${{ env.PACKAGED_OUTPUTPATH }}/*.img.gz
           append: false
