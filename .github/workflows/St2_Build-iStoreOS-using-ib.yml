@@ -10,7 +10,7 @@ on:
         type: choice
         options:
           - a311d-oes_s922x-oes-plus_wxy-oect
-          - nsy-g16-plus_nsy-g68-plus_bdy-g18-pro
+          - nsy-g16-plus_nsy-g68-plus_bdy-g18-pro_bdy-g98
           - s905d_s905x3_s912_s922x-ct2000
           - a311d
           - a311d-oes
@@ -41,6 +41,7 @@ on:
           - eaidk-610
           - easepi-a2
           - easepi-r2
+          - elfboard-elf2
           - emb3531
           - fine3399
           - firefly-itx-3588j
@@ -51,6 +52,8 @@ on:
           - gea-6319
           - gzpeite-p01
           - h28k
+          - h339pc
+          - h618-ai-douhe
           - h618-devboard
           - h66k
           - h68k
@@ -59,6 +62,7 @@ on:
           - h88k-v3
           - h96-max-m2
           - hk1-rbox-k8s
+          - houzzkit-f1
           - hs530r
           - ht2
           - hugsun-x99
@@ -74,6 +78,7 @@ on:
           - lubancat-2
           - lubancat-3
           - lubancat-4
+          - lubancat-5
           - lx-r3s
           - lyt-t68m
           - lz-d3568
@@ -96,8 +101,10 @@ on:
           - orangepi-5b
           - orangepi-zero3
           - painet-p3
+          - painet-p5
           - panther-x2
           - photonicat
+          - quarkpi-ca2
           - r66s
           - r68s
           - recomputer-rk3576-devkit
@@ -131,11 +138,13 @@ on:
           - s905l3a
           - s905l3a-cm311
           - s905l3a-m401a
+          - s905l3a-w103d
           - s905l3b
           - s905l3b-e900v21d
           - s905l3b-e900v22d
           - s905l3b-e900v22e
           - s905l3b-ip103h
+          - s905l3b-m302a
           - s905l3b-rg020et-ca
           - s905l3b-unt403a
           - s905lb-ipbs9505
@@ -153,6 +162,7 @@ on:
           - s905x-tbee
           - s905x-tx9
           - s905x2
+          - s905x2-b860h-v5
           - s905x2-km3
           - s905x2-x96max-2g
           - s905x2-hg680fj
@@ -208,6 +218,7 @@ on:
           - sv-33a6x-vpu
           - swan1-w28
           - sw799
+          - sz3390
           - taram
           - tanix-tx6
           - tb-ls3399
@@ -224,14 +235,19 @@ on:
           - x88pro20
           - x98h
           - xiaobao
+          - xingyicloud
+          - youyeetoo-r1-v3
+          - youyeetoo-yy3568
+          - youyeetoo-yy3588
           - yskj
           - zcube1-max
           - zk-r39a
+          - ztl-a568
           - zysj
       openwrt_kernel:
         description: "2、请选择内核版本"
         required: true
-        default: "6.6.y"
+        default: "6.12.y"
         type: choice
         options:
           - 6.6.y
@@ -242,16 +258,25 @@ on:
         required: false
         default: true
         type: boolean
+      kernel_usage:
+        description: "3、请选择内核标签"
+        required: false
+        default: "stable"
+        type: choice
+        options:
+          - stable
+          - flippy
+          - beta
       openwrt_rootfs:
-        description: "3、请选择Rootfs通用底包（先确保St1有执行）"
-        required: true
+        description: "4、请选择Rootfs通用底包（先确保St1有执行）"
+        required: false
         default: "RELEASE"
         type: choice
         options:
           - RELEASE
       network_settings:
-        description: "4、请选择初始网络配置（先确保St1有执行）"
-        required: true
+        description: "5、请选择初始网络配置（先确保St1有执行）"
+        required: false
         default: "dhcp"
         type: choice
         options:
@@ -259,14 +284,16 @@ on:
           - dhcp
 
 env:
-  VERSION: 24.10.8
+  VERSION: 25.12.6
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
       - name: ⏬ 下载 rootfs.tar.gz
         run: |
@@ -294,7 +321,7 @@ jobs:
           openwrt_kernel: ${{ inputs.openwrt_kernel }}
           auto_kernel: ${{ inputs.auto_kernel }}
           kernel_repo: ophub/kernel
-          kernel_usage: stable
+          kernel_usage: ${{ inputs.kernel_usage }}
           builder_name: kwonelee
 
       - name: 📜 调整.img.gz 文件名
@@ -313,7 +340,7 @@ jobs:
           done
 
       - name: 🚀 上传到 Release
-        uses: softprops/action-gh-release@v2.2.1
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: iStoreOS-${{ env.VERSION }}-${{ inputs.openwrt_rootfs }}-${{ inputs.network_settings }}
           files: |
