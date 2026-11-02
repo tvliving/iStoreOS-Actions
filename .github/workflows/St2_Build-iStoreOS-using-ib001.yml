@@ -142,6 +142,7 @@ on:
           - s905l3a
           - s905l3a-cm311
           - s905l3a-m401a
+          - s905l3a-w103d
           - s905l3b
           - s905l3b-e900v21d
           - s905l3b-e900v22d
@@ -342,11 +343,58 @@ jobs:
           fi
           echo "file=$ROOTFS_FILE" >> $GITHUB_OUTPUT
 
+      - name: 🔍 按数据库校验机型代号
+        id: boards
+        run: |
+          set -uo pipefail
+          DB_URL="https://raw.githubusercontent.com/ophub/amlogic-s9xxx-openwrt/main/make-openwrt/openwrt-files/common-files/etc/model_database.conf"
+
+          if ! curl -fsSL --retry 3 -o /tmp/model_database.conf "$DB_URL"; then
+            echo "::warning::机型数据库下载失败，跳过校验，按原列表编译"
+            echo "board=${{ matrix.GROUP }}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # 第 14 列即 BOARD（字段以冒号分隔，共 15 列）
+          awk -F':' '!/^#/ && NF >= 15 {gsub(/[[:space:]]/, "", $14); if ($14 != "") print $14}' \
+            /tmp/model_database.conf | sort -u > /tmp/supported.txt
+          echo "打包工具数据库收录机型：$(wc -l < /tmp/supported.txt) 个"
+
+          # 已废弃/改名的代号映射
+          declare -A ALIAS=( [s905l3a-w103d]=s905x2-w103d )
+
+          VALID=""
+          SKIPPED=""
+          IFS='_' read -r -a ARR <<< "${{ matrix.GROUP }}"
+          for b in "${ARR[@]}"; do
+            m="${ALIAS[$b]:-$b}"
+            if [ "$m" != "$b" ]; then echo "::notice::机型 $b 在当前数据库中已更名为 $m"; fi
+            if grep -qx "$m" /tmp/supported.txt; then
+              if [ -z "$VALID" ]; then VALID="$m"; else VALID="${VALID}_$m"; fi
+            else
+              SKIPPED="$SKIPPED $b"
+            fi
+          done
+
+          if [ -n "$SKIPPED" ]; then
+            echo "::warning::以下机型不在打包工具数据库中，已跳过：$SKIPPED"
+            {
+              echo "### ⚠️ 本组跳过的机型（数据库中不存在）"
+              for s in $SKIPPED; do echo "- \`$s\`"; done
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "本组待编机型（$([ -z "$VALID" ] && echo 0 || echo "$VALID" | tr '_' '\n' | wc -l) 个）：$VALID"
+          echo "board=$VALID" >> "$GITHUB_OUTPUT"
+          # 清单留档，便于核对
+          echo "$VALID" | tr '_' '\n' | sed '/^$/d' > /tmp/boards.txt
+
       - name: 🧱 打包iStoreOS固件
+        if: steps.boards.outputs.board != ''
         uses: ophub/amlogic-s9xxx-openwrt@main
         with:
           openwrt_path: ${{ steps.find_rootfs.outputs.file }}
-          openwrt_board: ${{ matrix.GROUP }}
+          openwrt_board: ${{ steps.boards.outputs.board }}
           openwrt_kernel: ${{ inputs.openwrt_kernel || '6.12.y' }}
           auto_kernel: true
           kernel_repo: ophub/kernel
@@ -354,6 +402,7 @@ jobs:
           builder_name: kwonelee
 
       - name: 📜 调整.img.gz 文件名
+        if: steps.boards.outputs.board != ''
         id: rename
         run: |
           for FILE in ${{ env.PACKAGED_OUTPUTPATH }}/*.img.gz; do
@@ -369,6 +418,7 @@ jobs:
           done
 
       - name: 🚀 上传到 Release
+        if: steps.boards.outputs.board != ''
         env:
           # 使用 GitHub 自动注入的内置令牌（永不过期，权限由 jobs.permissions 控制）
           # 若日后需要跨仓库操作，再改成 ${{ secrets.GH_TOKEN }} 并确保 PAT 未过期
@@ -454,11 +504,44 @@ jobs:
           fi
           echo "file=$ROOTFS_FILE" >> $GITHUB_OUTPUT
 
+      - name: 🔍 按数据库校验机型代号
+        id: boards
+        run: |
+          set -uo pipefail
+          DB_URL="https://raw.githubusercontent.com/ophub/amlogic-s9xxx-openwrt/main/make-openwrt/openwrt-files/common-files/etc/model_database.conf"
+          WANT="${{ inputs.openwrt_board }}"
+
+          if ! curl -fsSL --retry 3 -o /tmp/model_database.conf "$DB_URL"; then
+            echo "::warning::机型数据库下载失败，跳过校验"
+            echo "board=$WANT" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          awk -F':' '!/^#/ && NF >= 15 {gsub(/[[:space:]]/, "", $14); if ($14 != "") print $14}' \
+            /tmp/model_database.conf | sort -u > /tmp/supported.txt
+
+          declare -A ALIAS=( [s905l3a-w103d]=s905x2-w103d )
+          VALID=""
+          IFS='_' read -r -a ARR <<< "$WANT"
+          for b in "${ARR[@]}"; do
+            m="${ALIAS[$b]:-$b}"
+            if [ "$m" != "$b" ]; then echo "::notice::机型 $b 在当前数据库中已更名为 $m"; fi
+            if grep -qx "$m" /tmp/supported.txt; then
+              if [ -z "$VALID" ]; then VALID="$m"; else VALID="${VALID}_$m"; fi
+            else
+              echo "::warning::机型 $b 不在打包工具数据库中，已跳过"
+            fi
+          done
+
+          echo "待编机型：$VALID"
+          echo "board=$VALID" >> "$GITHUB_OUTPUT"
+
       - name: 🧱 打包iStoreOS固件
+        if: steps.boards.outputs.board != ''
         uses: ophub/amlogic-s9xxx-openwrt@main
         with:
           openwrt_path: ${{ steps.find_rootfs.outputs.file }}
-          openwrt_board: ${{ inputs.openwrt_board }}
+          openwrt_board: ${{ steps.boards.outputs.board }}
           openwrt_kernel: ${{ inputs.openwrt_kernel }}
           auto_kernel: ${{ inputs.auto_kernel }}
           kernel_repo: ophub/kernel
@@ -466,6 +549,7 @@ jobs:
           builder_name: kwonelee
 
       - name: 📜 调整.img.gz 文件名
+        if: steps.boards.outputs.board != ''
         id: rename
         run: |
           for FILE in ${{ env.PACKAGED_OUTPUTPATH }}/*.img.gz; do
@@ -481,6 +565,7 @@ jobs:
           done
 
       - name: 🚀 上传到 Release
+        if: steps.boards.outputs.board != ''
         env:
           # 使用 GitHub 自动注入的内置令牌（永不过期，权限由 jobs.permissions 控制）
           GH_TOKEN: ${{ github.token }}
