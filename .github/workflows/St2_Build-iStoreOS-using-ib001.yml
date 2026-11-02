@@ -371,10 +371,18 @@ jobs:
 
       - name: 🚀 上传到 Release
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          # 使用 GitHub 自动注入的内置令牌（永不过期，权限由 jobs.permissions 控制）
+          # 若日后需要跨仓库操作，再改成 ${{ secrets.GH_TOKEN }} 并确保 PAT 未过期
+          GH_TOKEN: ${{ github.token }}
         run: |
           TAG="${{ env.RELEASE_PREFIX }}-$(TZ=Asia/Shanghai date +%Y-%m-%d)"
           echo "🏷 目标标签：$TAG"
+
+          # 令牌自检：失败立刻退出并给出明确原因，不再无效重试
+          if ! gh api "repos/$GITHUB_REPOSITORY" --jq '.full_name' >/dev/null 2>&1; then
+            echo "❌ 令牌无效或权限不足，请检查 Settings → Actions → General → Workflow permissions 是否为 Read and write"
+            exit 1
+          fi
 
           # 只创建、不删除：已存在则直接复用，历史版本全部保留
           {
@@ -386,23 +394,37 @@ jobs:
             echo "机型：全部 232 台（分组并行编译），资产陆续追加，请以本页最终列表为准"
           } > /tmp/notes.md
 
-          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release create "$TAG" \
               --repo "$GITHUB_REPOSITORY" \
               --title "iStoreOS $VERSION ($(TZ=Asia/Shanghai date +%Y-%m-%d))" \
-              --notes-file /tmp/notes.md \
-            || true
+              --notes-file /tmp/notes.md || true
+          fi
+
+          # 创建结果二次确认，避免后续 upload 反复报错
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "❌ Release 创建失败，请查看上面的错误信息（常见原因：令牌无 contents:write 权限）"
+            exit 1
+          fi
+
+          # 产物检查
+          if ! compgen -G "${{ env.PACKAGED_OUTPUTPATH }}/*.img.gz" > /dev/null; then
+            echo "⚠️ 没有找到 .img.gz 产物，跳过上传"
+            exit 0
+          fi
 
           # 并发上传可能撞车，失败重试
           for i in 1 2 3 4 5; do
             if gh release upload "$TAG" ${{ env.PACKAGED_OUTPUTPATH }}/*.img.gz \
                  --repo "$GITHUB_REPOSITORY" --clobber; then
               echo "✅ 上传完成"
-              break
+              exit 0
             fi
             echo "⚠️ 第 $i 次上传失败，10 秒后重试"
             sleep 10
           done
+          echo "❌ 上传多次失败"
+          exit 1
 
   #手动触发：只编选择的机型
   build-one:
@@ -461,10 +483,16 @@ jobs:
 
       - name: 🚀 上传到 Release
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          # 使用 GitHub 自动注入的内置令牌（永不过期，权限由 jobs.permissions 控制）
+          GH_TOKEN: ${{ github.token }}
         run: |
           TAG="${{ env.RELEASE_PREFIX }}-$(TZ=Asia/Shanghai date +%Y-%m-%d)"
           echo "🏷 目标标签：$TAG"
+
+          if ! gh api "repos/$GITHUB_REPOSITORY" --jq '.full_name' >/dev/null 2>&1; then
+            echo "❌ 令牌无效或权限不足，请检查 Settings → Actions → General → Workflow permissions 是否为 Read and write"
+            exit 1
+          fi
 
           {
             echo "iStoreOS 手动编译"
@@ -476,12 +504,17 @@ jobs:
             echo "网络：${{ inputs.network_settings }}"
           } > /tmp/notes.md
 
-          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release create "$TAG" \
               --repo "$GITHUB_REPOSITORY" \
               --title "iStoreOS $VERSION ($(TZ=Asia/Shanghai date +%Y-%m-%d))" \
-              --notes-file /tmp/notes.md \
-            || true
+              --notes-file /tmp/notes.md || true
+          fi
+
+          if ! compgen -G "${{ env.PACKAGED_OUTPUTPATH }}/*.img.gz" > /dev/null; then
+            echo "⚠️ 没有找到 .img.gz 产物，跳过上传"
+            exit 0
+          fi
 
           gh release upload "$TAG" ${{ env.PACKAGED_OUTPUTPATH }}/*.img.gz \
             --repo "$GITHUB_REPOSITORY" --clobber
